@@ -18,7 +18,7 @@ export function HeroSectionOne() {
 			</div>
 			<div className="px-4 py-10 md:py-20">
 				<h1 className="relative z-10 mx-auto max-w-4xl text-center text-2xl font-bold text-slate-700 md:text-4xl lg:text-7xl dark:text-slate-300">
-					{"One Wallet. Infinite Possibilities. Asset Sovereignty Starts Here."
+					{"Asset Sovereignty Starts Here."
 						.split(" ")
 						.map((word, index) => (
 							<motion.span
@@ -73,7 +73,7 @@ export function HeroSectionOne() {
 						Contact Support
 					</button>
 				</motion.div>
-				<motion.div
+				{/* <motion.div
 					initial={{
 						opacity: 0,
 						y: 10,
@@ -97,7 +97,8 @@ export function HeroSectionOne() {
 							width={1000}
 						/>
 					</div> */}
-				</motion.div>
+				{/* </motion.div> */} 
+
 			</div>
 		</div>
 	);
