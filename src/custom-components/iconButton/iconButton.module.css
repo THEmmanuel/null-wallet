@@ -1,0 +1,4 @@
+.iconButton{
+	display: flex;
+	flex-direction: column;
+}
