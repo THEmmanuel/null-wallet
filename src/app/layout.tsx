@@ -1,41 +1,41 @@
 import type { Metadata } from "next";
-import { Saira } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
-import { ThemeProvider } from "@/components/theme-provider"
+import { ThemeProvider } from "@/components/providers/ThemeProvider";
+import { PayPalProvider } from "@/components/providers/PayPalProvider";
+import { BottomNav } from "@/components/ui/bottom-nav";
+import { AppNav } from "@/components/ui/app-nav";
 
-const saira = Saira({
-  subsets: ["latin"],
-  display: "swap",
-  variable: "--font-saira",
-});
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Null Wallet: One Wallet. Infinite Possibilities.",
-  description: "One Wallet. Infinite Possibilities.",
+  title: "Null Wallet",
+  description: "A secure and private wallet for your digital assets",
 };
 
-interface RootLayoutProps {
+export default function RootLayout({
+  children,
+}: {
   children: React.ReactNode;
-}
-
-export default function RootLayout({ children }: RootLayoutProps) {
-	return (
-	  <>
-		<html lang="en" suppressHydrationWarning className={saira.variable}>
-		  <head />
-		  <body>
-			<ThemeProvider
-			  attribute="class"
-			  defaultTheme="system"
-			  enableSystem
-			  disableTransitionOnChange
-			>
-			  <div className="antialiased">
-				{children}
-			  </div>
-			</ThemeProvider>
-		  </body>
-		</html>
-	  </>
-	)
+}) {
+  return (
+    <html lang="en" suppressHydrationWarning>
+      <body className={inter.className}>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <AppNav />
+          <PayPalProvider>
+            <main className="pb-16">
+              {children}
+            </main>
+            <BottomNav />
+          </PayPalProvider>
+        </ThemeProvider>
+      </body>
+    </html>
+  );
 }
