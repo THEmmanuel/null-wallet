@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { PayPalProvider } from "@/components/providers/PayPalProvider";
+import { ChainProvider } from "@/contexts/ChainContext";
 import { BottomNav } from "@/components/ui/bottom-nav";
 import { AppNav } from "@/components/ui/app-nav";
 
@@ -27,13 +28,15 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <AppNav />
-          <PayPalProvider>
-            <main className="pb-16">
-              {children}
-            </main>
-            <BottomNav />
-          </PayPalProvider>
+          <ChainProvider>
+            <AppNav />
+            <PayPalProvider>
+              <main className="pb-16">
+                {children}
+              </main>
+              <BottomNav />
+            </PayPalProvider>
+          </ChainProvider>
         </ThemeProvider>
       </body>
     </html>

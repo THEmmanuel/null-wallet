@@ -2,38 +2,17 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { EclipseIcon, Globe, Landmark, ArrowUpRight, ArrowDownLeft, Send, ShoppingCart, ArrowRight, ChevronLeft, ChevronRight } from "lucide-react"
+import { ArrowDownLeft, Send, ShoppingCart, ChevronLeft, ChevronRight } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { WalletAddress } from '../../components/ui/wallet-address';
 import { formatDistanceToNow } from "date-fns"
-
-// Network definitions with icons
-const networks = [
-	{
-		id: "nullnet",
-		name: "NullNet",
-		icon: <Landmark className="h-4 w-4 text-purple-600" />,
-		symbol: "NULLX",
-		rate: 0.58,
-	},
-	{
-		id: "ethereum",
-		name: "Ethereum",
-		icon: <EclipseIcon className="h-4 w-4 text-blue-600" />,
-		symbol: "ETH",
-		rate: 2303.45,
-	},
-	{
-		id: "polygon",
-		name: "Polygon",
-		icon: <Landmark className="h-4 w-4 text-purple-600" />,
-		symbol: "MATIC",
-		rate: 0.58,
-	},
-	{ id: "bsc", name: "BSC", icon: <Globe className="h-4 w-4 text-yellow-600" />, symbol: "BNB", rate: 234.12 },
-]
+import { useChain } from "@/contexts/ChainContext"
+import { ChainSwitcherModal } from "@/components/ui/chain-switcher-modal"
+import { useRouter } from 'next/navigation';
+import { BottomNav } from '../../components/ui/bottom-nav';
+import { getWalletAddressForChain } from '@/utils/wallet-helpers';
+import { fetchTokenUSDBalance, TOKEN_CONFIGS } from '@/services/token-balance-api';
 
 // Sample transaction data
 const transactions = [
@@ -112,76 +91,190 @@ interface Transaction {
 }
 
 export default function WalletPage() {
-	const [currentNetwork, setCurrentNetwork] = useState(networks[0])
-	const [balance, setBalance] = useState<string>("0.00")
-	const [loading, setLoading] = useState(true)
+	const { currentNetwork, networks, switchNetwork, isLoading: chainLoading } = useChain()
+	const [balance, setBalance] = useState<string | null>(null)
+	const [isLoadingBalance, setIsLoadingBalance] = useState(true)
 	const [error, setError] = useState("")
 	const [transactions, setTransactions] = useState<Transaction[]>([])
-	const [txLoading, setTxLoading] = useState(true)
+	const [isLoadingTransactions, setIsLoadingTransactions] = useState(true)
 	const [txError, setTxError] = useState("")
 	const [currentPage, setCurrentPage] = useState(1)
-	const [totalPages, setTotalPages] = useState(1)
-	const transactionsPerPage = 5
-	const walletAddress = sessionStorage.getItem("userWalletAddress") || "N/A"
+	const [totalTransactions, setTotalTransactions] = useState(0)
+	const [showChainModal, setShowChainModal] = useState(false)
+	const transactionsPerPage = 4
+	const [walletAddress, setWalletAddress] = useState<string>("");
+	
+	// New state for token balance
+	const [tokenBalance, setTokenBalance] = useState<{
+		balance: string | null;
+		usdBalance: number;
+		tokenPrice: number;
+	}>({
+		balance: null,
+		usdBalance: 0,
+		tokenPrice: 0
+	});
+	const [isLoadingTokenBalance, setIsLoadingTokenBalance] = useState(false);
+
+	// Update wallet address when network changes
+	useEffect(() => {
+		const address = getWalletAddressForChain(currentNetwork.id);
+		setWalletAddress(address || "N/A");
+	}, [currentNetwork.id]);
 
 	const handleNetworkChange = (networkId: string) => {
-		const network = networks.find((n) => n.id === networkId)
-		if (network) {
-			setCurrentNetwork(network)
-		}
+		switchNetwork(networkId)
+		// Reset page to 1 when switching networks
+		setCurrentPage(1)
 	}
 
-	// Calculate USD value based on current network rate
-	const usdBalance = parseFloat(balance) * currentNetwork.rate
+	// Use token balance from backend if available (for supported chains), otherwise calculate locally
+	const displayUsdBalance = TOKEN_CONFIGS[currentNetwork.id] && tokenBalance.usdBalance > 0 
+		? tokenBalance.usdBalance 
+		: (balance ? parseFloat(balance) * currentNetwork.rate : 0)
+	
+	const displayTokenPrice = TOKEN_CONFIGS[currentNetwork.id] && tokenBalance.tokenPrice > 0
+		? tokenBalance.tokenPrice
+		: currentNetwork.rate
 
+	// Fetch balance
 	useEffect(() => {
-		const fetchBalance = async () => {
+		const getBalance = async () => {
+			setIsLoadingBalance(true)
+			setBalance(null)
+			setError("")
+
+			if (!walletAddress || walletAddress === "N/A") {
+				setIsLoadingBalance(false)
+				return
+			}
+
 			try {
-				const response = await fetch(`/api/balance?address=${walletAddress}`)
-				const data = await response.json()
+				const chainId = currentNetwork.id
+				const response = await fetch(`/api/balance?address=${walletAddress}&chain=${chainId}`)
 				
-				if (data.status === "1") {
-					// Convert wei to ETH (1 ETH = 10^18 wei)
-					const balanceInEth = (parseInt(data.result) / 1e18).toFixed(6)
-					setBalance(balanceInEth)
-				} else {
-					setError("Failed to fetch balance")
+				console.log('Balance API Response status:', response.status);
+				console.log('Balance API Response ok:', response.ok);
+				
+				if (!response.ok) {
+					const errorText = await response.text();
+					console.error('Balance API error response:', errorText);
+					throw new Error(`Failed to fetch balance: ${response.statusText}`)
 				}
-			} catch (err) {
-				setError("Error fetching balance")
-				console.error(err)
+
+				const data = await response.json()
+				console.log('Balance API data:', data);
+				
+				if (data.success && data.balance !== undefined) {
+					setBalance(data.balance)
+				} else {
+					console.error('Invalid balance response format:', data);
+					throw new Error(data.error || 'Failed to get balance')
+				}
+			} catch (error) {
+				console.error('Balance fetch error:', error)
+				setError(error instanceof Error ? error.message : 'Failed to fetch balance')
+				setBalance('0') 
 			} finally {
-				setLoading(false)
+				setIsLoadingBalance(false)
 			}
 		}
 
-		fetchBalance()
-	}, [walletAddress])
+		getBalance()
+	}, [walletAddress, currentNetwork])
 
+	// Fetch token USD balance
 	useEffect(() => {
-		const fetchTransactions = async () => {
+		const getTokenBalance = async () => {
+			if (!walletAddress || walletAddress === "N/A") {
+				return
+			}
+
+			// Get the native token symbol for the current network
+			const nativeTokenSymbol = currentNetwork.id === "ethereum" ? "ETH" : 
+									   currentNetwork.id === "sepolia" ? "ETH" :
+									   currentNetwork.id === "polygon" ? "MATIC" : 
+									   currentNetwork.id === "mumbai" ? "MATIC" :
+									   currentNetwork.id === "bsc" ? "BNB" : 
+									   currentNetwork.id === "bscTestnet" ? "BNB" : null;
+
+			if (!nativeTokenSymbol || !TOKEN_CONFIGS[currentNetwork.id]) {
+				// Network not supported for token USD balance
+				return;
+			}
+
+			setIsLoadingTokenBalance(true)
 			try {
-				setTxLoading(true)
-				const response = await fetch(`/api/transactions?address=${walletAddress}&page=${currentPage}&offset=${transactionsPerPage}`)
-				const data = await response.json()
+				const tokenData = await fetchTokenUSDBalance(
+					walletAddress,
+					nativeTokenSymbol,
+					currentNetwork.id
+				);
 				
-				if (data.status === "1") {
-					setTransactions(data.result)
-					// Calculate total pages based on total transactions (assuming 100 is the max from API)
-					setTotalPages(Math.ceil(Math.min(100, data.result.length) / transactionsPerPage))
-				} else {
-					setTxError("Failed to fetch transactions")
-				}
-			} catch (err) {
-				setTxError("Error fetching transactions")
-				console.error(err)
+				setTokenBalance({
+					balance: tokenData.balance,
+					usdBalance: tokenData.usdBalance || 0,
+					tokenPrice: tokenData.tokenPrice || 0
+				})
+			} catch (error) {
+				console.error('Token balance fetch error:', error)
+				setTokenBalance({
+					balance: '0',
+					usdBalance: 0,
+					tokenPrice: 0
+				})
 			} finally {
-				setTxLoading(false)
+				setIsLoadingTokenBalance(false)
 			}
 		}
 
-		fetchTransactions()
-	}, [walletAddress, currentPage])
+		getTokenBalance()
+	}, [walletAddress, currentNetwork])
+
+	// Fetch transactions
+	useEffect(() => {
+		const getTransactions = async () => {
+			if (!walletAddress || walletAddress === "N/A") {
+				return
+			}
+			
+			setIsLoadingTransactions(true)
+			try {
+				const chainId = currentNetwork.id
+				console.log('Fetching transactions for chain:', chainId);
+				const response = await fetch(`/api/transactions?address=${walletAddress}&chain=${chainId}&page=${currentPage}&offset=${transactionsPerPage}`)
+				
+				if (!response.ok) {
+					throw new Error(`Failed to fetch transactions: ${response.statusText}`)
+				}
+
+				const data = await response.json()
+				
+				if (data.success) {
+					const formattedTxs = data.transactions.map((tx: any) => ({
+						...tx,
+						value: tx.value || '0',
+						hash: tx.hash || 'N/A',
+						from: tx.from || 'N/A',
+						to: tx.to || 'N/A',
+						timeStamp: tx.timeStamp || tx.timestamp || Date.now().toString()
+					}))
+					setTransactions(formattedTxs)
+					setTotalTransactions(data.totalCount || 0)
+				} else {
+					throw new Error(data.error || 'Failed to get transactions')
+				}
+			} catch (error) {
+				console.error('Transactions fetch error:', error)
+				setTransactions([])
+				setTotalTransactions(0)
+			} finally {
+				setIsLoadingTransactions(false)
+			}
+		}
+
+		getTransactions()
+	}, [walletAddress, currentPage, currentNetwork])
 
 	const formatValue = (value: string) => {
 		return (parseInt(value) / 1e18).toFixed(6)
@@ -192,169 +285,210 @@ export default function WalletPage() {
 	}
 
 	return (
-		<main className="flex min-h-screen flex-col items-center p-4 md:p-8">
-			<div className="w-full max-w-md">
-				{/* Enhanced Header */}
-				<Card className="mb-6 overflow-hidden bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/40 dark:to-indigo-950/40">
-					<CardContent className="p-6">
-						<div className="flex items-center justify-between mb-4">
-							<DropdownMenu>
-								<DropdownMenuTrigger asChild>
-									<Button variant="outline" className="flex items-center space-x-2">
-										{currentNetwork.icon}
-										<span>{currentNetwork.name}</span>
-										<span className="text-xs opacity-70">▼</span>
-									</Button>
-								</DropdownMenuTrigger>
-								<DropdownMenuContent align="start">
-									{networks.map((network) => (
-										<DropdownMenuItem
-											key={network.id}
-											onClick={() => handleNetworkChange(network.id)}
-											className="flex items-center space-x-2"
-										>
-											{network.icon}
-											<span>{network.name}</span>
-										</DropdownMenuItem>
-									))}
-								</DropdownMenuContent>
-							</DropdownMenu>
+		<div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
+			{/* Background decorative elements */}
+			<div className="absolute inset-0 overflow-hidden pointer-events-none">
+				<div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-400/20 to-purple-600/20 rounded-full blur-3xl"></div>
+				<div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-tr from-green-400/20 to-blue-600/20 rounded-full blur-3xl"></div>
+			</div>
 
-							<div className="text-right">
-								<p className="text-sm text-gray-500">
-									1 {currentNetwork.symbol} = ${currentNetwork.rate.toLocaleString()}
-								</p>
+			<main className="relative flex min-h-screen flex-col p-4 md:p-6">
+				<div className="w-full max-w-md mx-auto space-y-6">
+					{/* Enhanced Header */}
+					<Card className="border-0 shadow-lg bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm animate-fadeIn overflow-hidden">
+						<CardContent className="p-6">
+							<div className="flex items-center justify-between mb-4">
+								<Button
+									variant="outline"
+									className="flex items-center space-x-2 bg-white/50 dark:bg-slate-700/50 backdrop-blur-sm border-gray-300 dark:border-gray-600 hover:bg-white/80 dark:hover:bg-slate-600/80 transition-all duration-200"
+									onClick={() => setShowChainModal(true)}
+								>
+									{currentNetwork.icon}
+									<span>{currentNetwork.name}</span>
+									<span className="text-xs opacity-70">▼</span>
+								</Button>
+
+								<div className="text-right">
+									<p className="text-sm text-gray-600 dark:text-gray-400">
+										1 {currentNetwork.symbol} = ${displayTokenPrice.toLocaleString()}
+									</p>
+								</div>
 							</div>
-						</div>
 
-						<div className="text-center mb-6">
-							<h1 className="text-3xl font-bold">
-								{loading ? (
-									<div className="flex items-center space-x-2">
-										<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-										<p className="text-gray-600 dark:text-gray-400">Loading balance...</p>
+							<div className="text-center mb-6 animate-slideUp" style={{ animationDelay: '0.1s' }}>
+								{chainLoading || isLoadingBalance || (TOKEN_CONFIGS[currentNetwork.id] && isLoadingTokenBalance) ? (
+									<div className="flex items-center justify-center space-x-2">
+										<div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+										<p className="text-gray-600 dark:text-gray-400">
+											{chainLoading ? `Switching to ${currentNetwork.name}...` : "Loading balance..."}
+										</p>
 									</div>
 								) : error ? (
 									<p className="text-red-600 dark:text-red-400">{error}</p>
 								) : (
-									<p className="text-4xl font-bold text-blue-600 dark:text-blue-400">{balance} {currentNetwork.symbol}</p>
+									<>
+										<h1 className="text-4xl font-bold text-blue-600 dark:text-blue-400 mb-2">
+											{balance} {currentNetwork.symbol}
+										</h1>
+										<p className="text-xl text-gray-600 dark:text-gray-300">
+											${displayUsdBalance.toLocaleString()}
+										</p>
+										{TOKEN_CONFIGS[currentNetwork.id] && tokenBalance.tokenPrice > 0 && (
+											<p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+												via CoinGecko API
+											</p>
+										)}
+									</>
 								)}
-							</h1>
-							<p className="text-gray-500">${usdBalance.toLocaleString()}</p>
-						</div>
-
-						{/* Action Buttons */}
-						<div className="flex justify-center gap-12">
-							<Link href="/wallet/send" className="flex flex-col items-center">
-								<Button variant="ghost" size="icon" className="h-12 w-12 rounded-full mb-2">
-									<Send className="h-5 w-5" />
-								</Button>
-								<span className="text-sm">Send</span>
-							</Link>
-
-							<Link href="/wallet/receive" className="flex flex-col items-center">
-								<div className="flex flex-col items-center">
-									<Button variant="ghost" size="icon" className="h-12 w-12 rounded-full mb-2">
-										<ArrowDownLeft className="h-5 w-5" />
-									</Button>
-									<span className="text-sm">Receive</span>
-								</div>
-							</Link>
-
-							<Link href="/wallet/options" className="flex flex-col items-center">
-								<Button variant="ghost" size="icon" className="h-12 w-12 rounded-full mb-2">
-									<ShoppingCart className="h-5 w-5" />
-								</Button>
-								<span className="text-sm">Buy/Sell</span>
-							</Link>
-						</div>
-					</CardContent>
-				</Card>
-
-				{/* Wallet Address */}
-				<WalletAddress address={walletAddress} />
-
-				{/* Transaction History */}
-				<h2 className="text-xl font-bold mb-4">Transaction History</h2>
-
-				{txLoading ? (
-					<div className="flex items-center justify-center py-8">
-						<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-					</div>
-				) : txError ? (
-					<div className="text-red-600 dark:text-red-400 text-center py-4">{txError}</div>
-				) : transactions.length === 0 ? (
-					<div className="text-center py-8 text-gray-600 dark:text-gray-400">
-						No transactions found
-					</div>
-				) : (
-					<>
-						<div className="space-y-4">
-							{transactions.map((tx) => (
-								<div key={tx.hash} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-									<div className="flex-1">
-										<div className="flex items-center space-x-2">
-											<span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-												tx.from.toLowerCase() === walletAddress.toLowerCase() 
-													? "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400"
-													: "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
-											}`}>
-												{tx.from.toLowerCase() === walletAddress.toLowerCase() ? "Sent" : "Received"}
-											</span>
-											<span className="text-sm text-gray-600 dark:text-gray-400">
-												{formatDistanceToNow(new Date(parseInt(tx.timeStamp) * 1000), { addSuffix: true })}
-											</span>
-										</div>
-										<div className="mt-1">
-											<a 
-												href={`https://sepolia.etherscan.io/tx/${tx.hash}`}
-												target="_blank"
-												rel="noopener noreferrer"
-												className="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
-											>
-												{tx.hash.slice(0, 6)}...{tx.hash.slice(-4)}
-											</a>
-										</div>
-									</div>
-									<div className="text-right">
-										<div className="text-sm font-medium text-gray-900 dark:text-white">
-											{formatValue(tx.value)} ETH
-										</div>
-										<div className="text-xs text-gray-500 dark:text-gray-400">
-											Gas: {formatGasPrice(tx.gasPrice)} Gwei
-										</div>
-									</div>
-								</div>
-							))}
-						</div>
-
-						{/* Pagination */}
-						{totalPages > 1 && (
-							<div className="flex items-center justify-between mt-6">
-								<button
-									onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-									disabled={currentPage === 1}
-									className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
-								>
-									<ChevronLeft className="w-4 h-4 mr-1" />
-									Previous
-								</button>
-								<span className="text-sm text-gray-700 dark:text-gray-300">
-									Page {currentPage} of {totalPages}
-								</span>
-								<button
-									onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-									disabled={currentPage === totalPages}
-									className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
-								>
-									Next
-									<ChevronRight className="w-4 h-4 ml-1" />
-								</button>
 							</div>
-						)}
-					</>
-				)}
-			</div>
-		</main>
+
+							{/* Action Buttons */}
+							<div className="flex justify-center gap-8 animate-slideUp" style={{ animationDelay: '0.2s' }}>
+								<Link href="/wallet/send" className="flex flex-col items-center group">
+									<Button 
+										variant="ghost" 
+										size="icon" 
+										className="h-14 w-14 rounded-full mb-2 bg-blue-100 dark:bg-blue-900/50 hover:bg-blue-200 dark:hover:bg-blue-800/70 text-blue-600 dark:text-blue-400 transition-all duration-300 group-hover:scale-110 group-hover:shadow-lg"
+									>
+										<Send className="h-6 w-6" />
+									</Button>
+									<span className="text-sm text-gray-700 dark:text-gray-300 font-medium">Send</span>
+								</Link>
+
+								<Link href="/wallet/receive" className="flex flex-col items-center group">
+									<Button 
+										variant="ghost" 
+										size="icon" 
+										className="h-14 w-14 rounded-full mb-2 bg-green-100 dark:bg-green-900/50 hover:bg-green-200 dark:hover:bg-green-800/70 text-green-600 dark:text-green-400 transition-all duration-300 group-hover:scale-110 group-hover:shadow-lg"
+									>
+										<ArrowDownLeft className="h-6 w-6" />
+									</Button>
+									<span className="text-sm text-gray-700 dark:text-gray-300 font-medium">Receive</span>
+								</Link>
+
+								<Link href="/wallet/options" className="flex flex-col items-center group">
+									<Button 
+										variant="ghost" 
+										size="icon" 
+										className="h-14 w-14 rounded-full mb-2 bg-purple-100 dark:bg-purple-900/50 hover:bg-purple-200 dark:hover:bg-purple-800/70 text-purple-600 dark:text-purple-400 transition-all duration-300 group-hover:scale-110 group-hover:shadow-lg"
+									>
+										<ShoppingCart className="h-6 w-6" />
+									</Button>
+									<span className="text-sm text-gray-700 dark:text-gray-300 font-medium">Buy/Sell</span>
+								</Link>
+							</div>
+						</CardContent>
+					</Card>
+
+					{/* Wallet Address */}
+					<div className="animate-slideUp" style={{ animationDelay: '0.3s' }}>
+						<WalletAddress address={walletAddress} />
+					</div>
+
+					{/* Transaction History */}
+					<Card className="border-0 shadow-lg bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm animate-slideUp" style={{ animationDelay: '0.4s' }}>
+						<CardContent className="p-6">
+							<h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-gray-100">Transaction History</h2>
+
+							{chainLoading || isLoadingTransactions ? (
+								<div className="flex items-center justify-center py-8">
+									<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+									<span className="ml-2 text-gray-600 dark:text-gray-400">
+										{chainLoading ? `Loading ${currentNetwork.name} transactions...` : "Loading transactions..."}
+									</span>
+								</div>
+							) : txError ? (
+								<div className="text-red-600 dark:text-red-400 text-center py-4">{txError}</div>
+							) : transactions.length === 0 ? (
+								<div className="text-center py-8 text-gray-600 dark:text-gray-400">
+									<p>No transactions found on {currentNetwork.name}</p>
+									{(currentNetwork.id === "ethereum" || currentNetwork.id === "sepolia") && (
+										<p className="text-sm mt-2">
+											Ensure ETHERSCAN_KEY is set in backend .env file
+										</p>
+									)}
+								</div>
+							) : (
+								<>
+									<div className="space-y-3">
+										{transactions.map((tx, index) => (
+											<div 
+												key={tx.hash} 
+												className="flex items-center justify-between p-4 bg-gray-50/80 dark:bg-gray-700/50 rounded-lg backdrop-blur-sm hover:bg-gray-100/80 dark:hover:bg-gray-600/50 transition-all duration-200 animate-slideUp"
+												style={{ animationDelay: `${0.5 + index * 0.05}s` }}
+											>
+												<div className="flex-1">
+													<div className="flex items-center space-x-2 mb-1">
+														<span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+															tx.from.toLowerCase() === walletAddress.toLowerCase() 
+																? "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400"
+																: "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
+														}`}>
+															{tx.from.toLowerCase() === walletAddress.toLowerCase() ? "Sent" : "Received"}
+														</span>
+														<span className="text-sm text-gray-600 dark:text-gray-400">
+															{formatDistanceToNow(new Date(parseInt(tx.timeStamp) * 1000), { addSuffix: true })}
+														</span>
+													</div>
+													<div className="mt-1">
+														<a 
+															href={`${currentNetwork.blockExplorer}/tx/${tx.hash}`}
+															target="_blank"
+															rel="noopener noreferrer"
+															className="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-mono"
+														>
+															{tx.hash.slice(0, 6)}...{tx.hash.slice(-4)}
+														</a>
+													</div>
+												</div>
+												<div className="text-right">
+													<div className="text-sm font-medium text-gray-900 dark:text-white">
+														{formatValue(tx.value)} {currentNetwork.symbol}
+													</div>
+													<div className="text-xs text-gray-500 dark:text-gray-400">
+														Gas: {formatGasPrice(tx.gasPrice)} Gwei
+													</div>
+												</div>
+											</div>
+										))}
+									</div>
+
+									{/* Pagination */}
+									{totalTransactions > 0 && (
+										<div className="flex items-center justify-between mt-6 animate-slideUp" style={{ animationDelay: '0.7s' }}>
+											<Button
+												variant="outline"
+												onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+												disabled={currentPage === 1}
+												className="flex items-center bg-white/50 dark:bg-slate-700/50 backdrop-blur-sm border-gray-300 dark:border-gray-600 hover:bg-white/80 dark:hover:bg-slate-600/80 transition-all duration-200"
+											>
+												<ChevronLeft className="w-4 h-4 mr-1" />
+												Previous
+											</Button>
+											<span className="text-sm text-gray-700 dark:text-gray-300">
+												Page {currentPage} of {Math.ceil(totalTransactions / transactionsPerPage)}
+											</span>
+											<Button
+												variant="outline"
+												onClick={() => setCurrentPage(p => Math.min(Math.ceil(totalTransactions / transactionsPerPage), p + 1))}
+												disabled={currentPage === Math.ceil(totalTransactions / transactionsPerPage)}
+												className="flex items-center bg-white/50 dark:bg-slate-700/50 backdrop-blur-sm border-gray-300 dark:border-gray-600 hover:bg-white/80 dark:hover:bg-slate-600/80 transition-all duration-200"
+											>
+												Next
+												<ChevronRight className="w-4 h-4 ml-1" />
+											</Button>
+										</div>
+									)}
+								</>
+							)}
+						</CardContent>
+					</Card>
+				</div>
+			</main>
+			<ChainSwitcherModal
+				isOpen={showChainModal}
+				onClose={() => setShowChainModal(false)}
+			/>
+		</div>
 	)
 }

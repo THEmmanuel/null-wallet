@@ -1,10 +1,20 @@
 import { openDB, DBSchema, IDBPDatabase } from 'idb';
 
+interface WalletData {
+    walletName: string;
+    walletAddress: string;
+    walletKey: string | null;
+    walletPhrase: string | null;
+    _id: string;
+}
+
 interface SessionData {
     accessToken: string;
     refreshToken: string;
     userId: string;
     expiresAt: number;
+    userWallets?: WalletData[];
+    userEmail?: string;
 }
 
 interface WalletDB extends DBSchema {
@@ -52,6 +62,26 @@ class SessionManager {
         const session = await this.getSession();
         if (!session) return false;
         return session.expiresAt > Date.now();
+    }
+
+    // Get the appropriate wallet address for a given chain
+    async getWalletForChain(chainId: string): Promise<WalletData | null> {
+        const session = await this.getSession();
+        if (!session || !session.userWallets) return null;
+
+        // For NullNet, use the NullNet wallet
+        if (chainId === 'nullnet') {
+            return session.userWallets.find(w => w.walletName === 'NullNet Wallet') || null;
+        }
+
+        // For all other chains (EVM chains), use the Ethereum wallet
+        return session.userWallets.find(w => w.walletName === 'Ethereum Wallet') || null;
+    }
+
+    // Get wallet address for a specific chain
+    async getWalletAddressForChain(chainId: string): Promise<string | null> {
+        const wallet = await this.getWalletForChain(chainId);
+        return wallet?.walletAddress || null;
     }
 }
 

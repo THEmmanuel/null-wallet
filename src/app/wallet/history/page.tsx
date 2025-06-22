@@ -1,7 +1,13 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
+import { useState, useEffect } from "react"
 import { formatDistanceToNow } from "date-fns"
+import { ArrowLeft, Send, ArrowDownLeft } from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { useChain } from "@/contexts/ChainContext"
+import { getWalletAddressForChain } from "@/utils/wallet-helpers"
 
 interface Transaction {
   timeStamp: string
@@ -14,31 +20,33 @@ interface Transaction {
   isError: string
 }
 
-export default function TransactionHistoryPage() {
+export default function HistoryPage() {
+  const router = useRouter()
+  const { currentNetwork } = useChain()
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
 
   useEffect(() => {
     const fetchTransactions = async () => {
-      try {
-        const walletAddress = sessionStorage.getItem("userWalletAddress")
-        if (!walletAddress) {
-          setError("Wallet address not found")
-          setLoading(false)
-          return
-        }
+      const walletAddress = getWalletAddressForChain(currentNetwork.id)
+      if (!walletAddress) {
+        setError("No wallet found for current network")
+        setLoading(false)
+        return
+      }
 
-        const response = await fetch(`/api/transactions?address=${walletAddress}`)
+      try {
+        const response = await fetch(`/api/transactions?address=${walletAddress}&chain=${currentNetwork.id}`)
         const data = await response.json()
         
-        if (data.status === "1") {
-          setTransactions(data.result)
+        if (data.success) {
+          setTransactions(data.transactions || [])
         } else {
-          setError("Failed to fetch transactions")
+          setError(data.error || "Failed to fetch transactions")
         }
       } catch (err) {
-        setError("Error fetching transactions")
+        setError("Failed to load transactions")
         console.error(err)
       } finally {
         setLoading(false)
@@ -46,7 +54,7 @@ export default function TransactionHistoryPage() {
     }
 
     fetchTransactions()
-  }, [])
+  }, [currentNetwork.id])
 
   const formatValue = (value: string) => {
     return (parseInt(value) / 1e18).toFixed(6)
@@ -89,41 +97,39 @@ export default function TransactionHistoryPage() {
                   </tr>
                 </thead>
                 <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                  {transactions.map((tx) => (
-                    <tr key={tx.hash} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                        {formatDistanceToNow(new Date(parseInt(tx.timeStamp) * 1000), { addSuffix: true })}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                        {tx.from.toLowerCase() === sessionStorage.getItem("userWalletAddress")?.toLowerCase() ? "Sent" : "Received"}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                        {formatValue(tx.value)} ETH
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                        {formatGasPrice(tx.gasPrice)} Gwei
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          tx.isError === "1" 
-                            ? "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400" 
-                            : "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
-                        }`}>
-                          {tx.isError === "1" ? "Failed" : "Success"}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                        <a 
-                          href={`https://sepolia.etherscan.io/tx/${tx.hash}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
-                        >
-                          {tx.hash.slice(0, 6)}...{tx.hash.slice(-4)}
-                        </a>
-                      </td>
-                    </tr>
-                  ))}
+                  {transactions.map((tx) => {
+                    const walletAddress = getWalletAddressForChain(currentNetwork.id)
+                    const isSent = tx.from.toLowerCase() === walletAddress?.toLowerCase()
+                    return (
+                      <Card
+                        key={tx.hash}
+                        className="hover:bg-gray-50 dark:hover:bg-gray-700"
+                      >
+                        <CardHeader className="flex flex-row items-center justify-between">
+                          <CardTitle className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                            {formatDistanceToNow(new Date(parseInt(tx.timeStamp) * 1000), { addSuffix: true })}
+                          </CardTitle>
+                          <CardContent className="text-sm text-gray-500 dark:text-gray-400">
+                            {tx.hash.slice(0, 6)}...{tx.hash.slice(-4)}
+                          </CardContent>
+                        </CardHeader>
+                        <CardContent>
+                          <p className="text-sm text-gray-900 dark:text-gray-100">
+                            {isSent ? "Sent" : "Received"}
+                          </p>
+                          <p className="text-sm text-gray-900 dark:text-gray-100">
+                            {formatValue(tx.value)} ETH
+                          </p>
+                          <p className="text-sm text-gray-900 dark:text-gray-100">
+                            {formatGasPrice(tx.gasPrice)} Gwei
+                          </p>
+                          <p className="text-sm text-gray-900 dark:text-gray-100">
+                            {tx.isError === "1" ? "Failed" : "Success"}
+                          </p>
+                        </CardContent>
+                      </Card>
+                    )
+                  })}
                 </tbody>
               </table>
             </div>

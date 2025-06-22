@@ -9,30 +9,46 @@ import { FloatingDockDemo } from "@/components/ui/floating-dock-demo"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-
-
-// Network definitions with icons
-const networks = [
-	{ id: "nullnet", name: "NullNet", icon: <EclipseIcon className="h-4 w-4 text-blue-600" /> },
-	{ id: "ethereum", name: "Ethereum", icon: <EclipseIcon className="h-4 w-4 text-blue-600" /> },
-	{ id: "polygon", name: "Polygon", icon: <Landmark className="h-4 w-4 text-purple-600" /> },
-	{ id: "bsc", name: "BSC", icon: <Globe className="h-4 w-4 text-yellow-600" /> },
-]
-
-// Mock data for different cryptocurrencies
-const cryptoAssets = [
-	{ name: "Ethereum", symbol: "ETH", balance: 1.2, usdValue: 2764, icon: <EclipseIcon className="h-6 w-6" />, color: "blue" },
-	{ name: "Bitcoin", symbol: "BTC", balance: 0.05, usdValue: 1250, icon: <EclipseIcon className="h-6 w-6" />, color: "orange" },
-	{ name: "Polygon", symbol: "MATIC", balance: 850, usdValue: 680, icon: <Landmark className="h-6 w-6" />, color: "purple" },
-]
+import { useChain } from "@/contexts/ChainContext"
 
 export default function Home() {
-	const [currentNetwork, setCurrentNetwork] = useState(networks[0])
+	const { currentNetwork, networks, tokens, switchNetwork } = useChain()
 
 	const handleNetworkChange = (networkId: string) => {
-		const network = networks.find((n) => n.id === networkId)
-		if (network) {
-			setCurrentNetwork(network)
+		switchNetwork(networkId)
+	}
+
+	// Get token icon based on token type
+	const getTokenIcon = (tokenType: string, tokenSymbol: string) => {
+		switch (tokenType) {
+			case 'native':
+				if (tokenSymbol === 'ETH') return <EclipseIcon className="h-6 w-6" />
+				if (tokenSymbol === 'MATIC') return <Landmark className="h-6 w-6" />
+				if (tokenSymbol === 'BNB') return <Globe className="h-6 w-6" />
+				return <EclipseIcon className="h-6 w-6" />
+			case 'erc20':
+				return <EclipseIcon className="h-6 w-6" />
+			case 'nullnet':
+				return <EclipseIcon className="h-6 w-6" />
+			default:
+				return <EclipseIcon className="h-6 w-6" />
+		}
+	}
+
+	// Get token color based on token symbol
+	const getTokenColor = (tokenSymbol: string) => {
+		switch (tokenSymbol.toUpperCase()) {
+			case 'ETH': return 'blue'
+			case 'MATIC': return 'purple'
+			case 'BNB': return 'yellow'
+			case 'USDT': return 'green'
+			case 'USDC': return 'blue'
+			case 'DAI': return 'orange'
+			case 'GOLD': return 'yellow'
+			case 'SILVER': return 'gray'
+			case 'PLATINUM': return 'gray'
+			case 'DIAMOND': return 'blue'
+			default: return 'gray'
 		}
 	}
 
@@ -91,7 +107,7 @@ export default function Home() {
 					{/* Portfolio Section */}
 					<div className="animate-slideUp" style={{ animationDelay: '0.3s' }}>
 						<div className="flex items-center justify-between mb-4">
-							<h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Your Assets</h3>
+							<h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Your Assets on {currentNetwork.name}</h3>
 							<div className="flex items-center space-x-1 text-sm text-green-600 dark:text-green-400">
 								<TrendingUp className="h-4 w-4" />
 								<span>+2.34%</span>
@@ -99,36 +115,54 @@ export default function Home() {
 						</div>
 						
 						<div className="space-y-3">
-							{cryptoAssets.map((asset, index) => (
-								<Link key={asset.symbol} href="/wallet" className="block">
-									<Card className="border-0 shadow-sm bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm hover:shadow-lg hover:scale-[1.02] transition-all duration-300 cursor-pointer"
-										style={{ animationDelay: `${0.4 + index * 0.1}s` }}>
-										<CardContent className="p-4">
-											<div className="flex items-center justify-between">
-												<div className="flex items-center space-x-3">
-													<div className={`flex h-10 w-10 items-center justify-center rounded-full bg-${asset.color}-100 dark:bg-${asset.color}-900/50`}>
-														<div className={`text-${asset.color}-600 dark:text-${asset.color}-400`}>
-															{asset.icon}
+							{tokens.length > 0 ? (
+								tokens.map((token, index) => {
+									const tokenColor = getTokenColor(token.symbol)
+									const tokenIcon = getTokenIcon(token.type, token.symbol)
+									
+									return (
+										<Link key={token.symbol} href="/wallet" className="block">
+											<Card className="border-0 shadow-sm bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm hover:shadow-lg hover:scale-[1.02] transition-all duration-300 cursor-pointer"
+												style={{ animationDelay: `${0.4 + index * 0.1}s` }}>
+												<CardContent className="p-4">
+													<div className="flex items-center justify-between">
+														<div className="flex items-center space-x-3">
+															<div className={`flex h-10 w-10 items-center justify-center rounded-full bg-${tokenColor}-100 dark:bg-${tokenColor}-900/50`}>
+																<div className={`text-${tokenColor}-600 dark:text-${tokenColor}-400`}>
+																	{tokenIcon}
+																</div>
+															</div>
+															<div>
+																<h4 className="font-medium text-gray-900 dark:text-gray-100">{token.name}</h4>
+																<p className="text-sm text-gray-500 dark:text-gray-400">{token.symbol}</p>
+																<p className="text-xs text-gray-400 dark:text-gray-500 capitalize">{token.type}</p>
+															</div>
+														</div>
+														<div className="text-right">
+															<p className="font-semibold text-gray-900 dark:text-gray-100">
+																0.00 {token.symbol}
+															</p>
+															<p className="text-sm text-gray-500 dark:text-gray-400">
+																$0.00
+															</p>
+															{token.contractAddress && (
+																<p className="text-xs text-gray-400 dark:text-gray-500">
+																	{token.contractAddress.slice(0, 6)}...{token.contractAddress.slice(-4)}
+																</p>
+															)}
 														</div>
 													</div>
-													<div>
-														<h4 className="font-medium text-gray-900 dark:text-gray-100">{asset.name}</h4>
-														<p className="text-sm text-gray-500 dark:text-gray-400">{asset.symbol}</p>
-													</div>
-												</div>
-												<div className="text-right">
-													<p className="font-semibold text-gray-900 dark:text-gray-100">
-														{asset.balance} {asset.symbol}
-													</p>
-													<p className="text-sm text-gray-500 dark:text-gray-400">
-														${asset.usdValue.toLocaleString()}
-													</p>
-												</div>
-											</div>
-										</CardContent>
-									</Card>
-								</Link>
-							))}
+												</CardContent>
+											</Card>
+										</Link>
+									)
+								})
+							) : (
+								<div className="text-center py-8 text-gray-600 dark:text-gray-400">
+									<p className="mb-2">No tokens available on {currentNetwork.name}</p>
+									<p className="text-sm">Switch to a different network to see available tokens</p>
+								</div>
+							)}
 						</div>
 					</div>
 

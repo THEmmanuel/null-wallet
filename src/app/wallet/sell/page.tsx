@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Banknote, CreditCard, Bitcoin } from "lucide-react";
+import { ArrowLeft, Banknote, CreditCard, Bitcoin, DollarSign } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 export default function SellPage() {
   const router = useRouter();
@@ -18,6 +20,9 @@ export default function SellPage() {
       icon: Banknote,
       description: "Receive funds directly to your bank account",
       fields: ["Account Number", "Routing Number", "Account Type"],
+      color: "from-green-500 to-green-600",
+      bgColor: "bg-green-100 dark:bg-green-900/50",
+      textColor: "text-green-600 dark:text-green-400",
     },
     {
       id: "paypal",
@@ -25,6 +30,9 @@ export default function SellPage() {
       icon: CreditCard,
       description: "Get paid instantly to your PayPal account",
       fields: ["PayPal Email"],
+      color: "from-blue-500 to-blue-600",
+      bgColor: "bg-blue-100 dark:bg-blue-900/50",
+      textColor: "text-blue-600 dark:text-blue-400",
     },
     {
       id: "crypto",
@@ -32,6 +40,9 @@ export default function SellPage() {
       icon: Bitcoin,
       description: "Receive payment in your preferred cryptocurrency",
       fields: ["Wallet Address", "Network"],
+      color: "from-orange-500 to-orange-600",
+      bgColor: "bg-orange-100 dark:bg-orange-900/50",
+      textColor: "text-orange-600 dark:text-orange-400",
     },
   ];
 
@@ -45,96 +56,124 @@ export default function SellPage() {
     }, 1500);
   };
 
+  const selectedMethodDetails = payoutMethods.find(m => m.id === selectedMethod);
+
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <button
-          onClick={() => router.back()}
-          className="flex items-center text-muted-foreground hover:text-foreground mb-8 transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Options
-        </button>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
+      {/* Background decorative elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-400/20 to-purple-600/20 rounded-full blur-3xl"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-tr from-green-400/20 to-blue-600/20 rounded-full blur-3xl"></div>
+      </div>
 
-        <div className="bg-card rounded-2xl p-8 shadow-lg border border-border">
+      <div className="relative max-w-2xl mx-auto px-4 py-8">
+        <div className="animate-fadeIn">
+          <button
+            onClick={() => router.back()}
+            className="flex items-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 mb-8 transition-colors duration-200 group"
+          >
+            <ArrowLeft className="w-5 h-5 mr-2 transition-transform duration-200 group-hover:-translate-x-1" />
+            Back to Options
+          </button>
+        </div>
+
+        <div className="animate-slideUp" style={{ animationDelay: '0.1s' }}>
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-foreground mb-4">
-              Sell Your Assets
-            </h1>
-            <p className="text-muted-foreground">
-              Choose how you want to receive your payment
-            </p>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-3">Sell Your Assets</h1>
+            <p className="text-gray-600 dark:text-gray-400">Convert your digital assets to cash</p>
           </div>
+        </div>
 
-          <form onSubmit={handleSell} className="space-y-6">
-            <div className="p-6 rounded-xl border border-border bg-background/50">
-              <h2 className="text-xl font-semibold text-foreground mb-4">
-                Asset Details
-              </h2>
-              <div className="space-y-4">
-                <div>
-                  <label
-                    htmlFor="amount"
-                    className="block text-sm font-medium text-foreground mb-2"
-                  >
-                    Amount (USD)
-                  </label>
+        <form onSubmit={handleSell} className="space-y-6">
+          {/* Asset Details Card */}
+          <Card className="border-0 shadow-xl bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm animate-slideUp" style={{ animationDelay: '0.2s' }}>
+            <CardContent className="p-8">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-6">Asset Details</h2>
+              <div>
+                <label htmlFor="amount" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Amount (USD)
+                </label>
+                <div className="relative">
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2">
+                    <DollarSign className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                  </div>
                   <input
                     id="amount"
                     name="amount"
                     type="number"
                     required
-                    className="w-full px-4 py-2 rounded-lg border border-input bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                    placeholder="Enter amount"
+                    className="w-full pl-12 pr-4 py-4 text-xl font-semibold rounded-2xl border-2 border-gray-200 dark:border-gray-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:border-blue-500 focus:outline-none transition-colors duration-200"
+                    placeholder="Enter amount to sell"
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
                   />
                 </div>
               </div>
-            </div>
+            </CardContent>
+          </Card>
 
-            <div className="space-y-4">
-              <h3 className="text-lg font-medium text-foreground">Payout Methods</h3>
-              <div className="grid gap-4">
-                {payoutMethods.map((method) => (
-                  <button
+          {/* Payout Methods */}
+          <Card className="border-0 shadow-xl bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm animate-slideUp" style={{ animationDelay: '0.3s' }}>
+            <CardContent className="p-8">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-6">Choose Payout Method</h3>
+              <div className="space-y-3">
+                {payoutMethods.map((method, index) => (
+                  <div
                     key={method.id}
-                    type="button"
-                    onClick={() => setSelectedMethod(method.id)}
-                    className={`p-4 rounded-xl border transition-all duration-200 ${
-                      selectedMethod === method.id
-                        ? "border-primary bg-primary/5"
-                        : "border-border hover:border-primary/50"
-                    }`}
+                    className="animate-slideUp"
+                    style={{ animationDelay: `${0.4 + index * 0.05}s` }}
                   >
-                    <div className="flex items-center space-x-4">
-                      <div className="w-10 h-10 rounded-full bg-background flex items-center justify-center">
-                        <method.icon className="w-5 h-5 text-foreground" />
+                    <button
+                      type="button"
+                      onClick={() => setSelectedMethod(method.id)}
+                      className={`w-full p-4 rounded-xl border-2 transition-all duration-200 ${
+                        selectedMethod === method.id
+                          ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20 shadow-lg"
+                          : "border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-500 hover:shadow-md"
+                      }`}
+                    >
+                      <div className="flex items-center space-x-4">
+                        <div className={`w-12 h-12 rounded-2xl ${method.bgColor} flex items-center justify-center transition-all duration-200 ${
+                          selectedMethod === method.id ? 'scale-110' : ''
+                        }`}>
+                          <method.icon className={`w-6 h-6 ${method.textColor}`} />
+                        </div>
+                        <div className="flex-1 text-left">
+                          <h4 className="font-semibold text-gray-900 dark:text-gray-100">{method.name}</h4>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">
+                            {method.description}
+                          </p>
+                        </div>
+                        <div className={`w-4 h-4 rounded-full border-2 transition-all duration-200 ${
+                          selectedMethod === method.id
+                            ? "border-blue-500 bg-blue-500"
+                            : "border-gray-300 dark:border-gray-600"
+                        }`}>
+                          {selectedMethod === method.id && (
+                            <div className="w-full h-full rounded-full bg-white scale-50"></div>
+                          )}
+                        </div>
                       </div>
-                      <div className="flex-1 text-left">
-                        <h4 className="font-medium text-foreground">{method.name}</h4>
-                        <p className="text-sm text-muted-foreground">
-                          {method.description}
-                        </p>
-                      </div>
-                    </div>
-                  </button>
+                    </button>
+                  </div>
                 ))}
               </div>
-            </div>
+            </CardContent>
+          </Card>
 
-            {selectedMethod && (
-              <div className="p-6 rounded-xl border border-border bg-background/50 space-y-4">
-                <h3 className="text-lg font-medium text-foreground">
-                  {payoutMethods.find(m => m.id === selectedMethod)?.name} Details
+          {/* Payment Details Form */}
+          {selectedMethod && selectedMethodDetails && (
+            <Card className="border-0 shadow-xl bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm animate-slideUp" style={{ animationDelay: '0.6s' }}>
+              <CardContent className="p-8">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-6">
+                  {selectedMethodDetails.name} Details
                 </h3>
-                {payoutMethods
-                  .find(m => m.id === selectedMethod)
-                  ?.fields.map((field) => (
+                <div className="space-y-4">
+                  {selectedMethodDetails.fields.map((field) => (
                     <div key={field}>
                       <label
                         htmlFor={field.toLowerCase().replace(" ", "-")}
-                        className="block text-sm font-medium text-foreground mb-2"
+                        className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
                       >
                         {field}
                       </label>
@@ -142,22 +181,38 @@ export default function SellPage() {
                         id={field.toLowerCase().replace(" ", "-")}
                         type="text"
                         required
-                        className="w-full px-4 py-2 rounded-lg border border-input bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                        className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:border-blue-500 focus:outline-none transition-colors duration-200"
                         placeholder={`Enter your ${field.toLowerCase()}`}
                       />
                     </div>
                   ))}
-              </div>
-            )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
-            <button
+          {/* Submit Button */}
+          <div className="animate-slideUp" style={{ animationDelay: '0.7s' }}>
+            <Button
               type="submit"
-              disabled={!selectedMethod || loading}
-              className="w-full py-3 px-4 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 text-white font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+              disabled={!selectedMethod || loading || !amount}
+              className="w-full py-4 text-lg font-semibold rounded-2xl bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 disabled:from-gray-400 disabled:to-gray-400 transition-all duration-200 shadow-lg hover:shadow-xl disabled:cursor-not-allowed"
             >
-              {loading ? "Processing..." : "Sell Now"}
-            </button>
-          </form>
+              {loading ? "Processing Sale..." : "Sell Now"}
+            </Button>
+          </div>
+        </form>
+
+        {/* Security Notice */}
+        <div className="animate-slideUp mt-8" style={{ animationDelay: '0.8s' }}>
+          <Card className="border-0 shadow-sm bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm">
+            <CardContent className="p-6 text-center">
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">💰 Instant Payout</h3>
+              <p className="text-xs text-gray-600 dark:text-gray-400">
+                Your funds will be transferred within 1-3 business days depending on your selected payout method.
+              </p>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>
