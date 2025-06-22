@@ -2,14 +2,14 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { ArrowDownLeft, Send, ShoppingCart, ChevronLeft, ChevronRight } from "lucide-react"
+import { ArrowDownLeft, Send, ShoppingCart, ChevronLeft, ChevronRight, ChevronDown, ArrowLeft } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { WalletAddress } from '../../components/ui/wallet-address';
 import { formatDistanceToNow } from "date-fns"
 import { useChain } from "@/contexts/ChainContext"
 import { ChainSwitcherModal } from "@/components/ui/chain-switcher-modal"
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { BottomNav } from '../../components/ui/bottom-nav';
 import { getWalletAddressForChain } from '@/utils/wallet-helpers';
 import { fetchTokenUSDBalance, TOKEN_CONFIGS } from '@/services/token-balance-api';
@@ -88,10 +88,19 @@ interface Transaction {
 	gasPrice: string
 	gasUsed: string
 	isError: string
+	tokenSymbol?: string
+	tokenName?: string
+	tokenDecimal?: string
+	contractAddress?: string
+	type?: string
 }
 
 export default function WalletPage() {
-	const { currentNetwork, networks, switchNetwork, isLoading: chainLoading } = useChain()
+	const { currentNetwork, networks, switchNetwork, isLoading: chainLoading, tokens, getTokensForChain } = useChain()
+	const searchParams = useSearchParams()
+	const router = useRouter()
+	const [selectedToken, setSelectedToken] = useState<string | null>(null)
+	const [tokenInfo, setTokenInfo] = useState<any>(null)
 	const [balance, setBalance] = useState<string | null>(null)
 	const [isLoadingBalance, setIsLoadingBalance] = useState(true)
 	const [error, setError] = useState("")
@@ -101,6 +110,7 @@ export default function WalletPage() {
 	const [currentPage, setCurrentPage] = useState(1)
 	const [totalTransactions, setTotalTransactions] = useState(0)
 	const [showChainModal, setShowChainModal] = useState(false)
+	const [showTokenDropdown, setShowTokenDropdown] = useState(false)
 	const transactionsPerPage = 4
 	const [walletAddress, setWalletAddress] = useState<string>("");
 	
@@ -116,6 +126,26 @@ export default function WalletPage() {
 	});
 	const [isLoadingTokenBalance, setIsLoadingTokenBalance] = useState(false);
 
+	// Get selected token from URL params
+	useEffect(() => {
+		const tokenParam = searchParams.get('token')
+		if (tokenParam) {
+			setSelectedToken(tokenParam)
+		} else {
+			// Default to native token if no token specified
+			const nativeToken = tokens.find(t => t.type === 'native')
+			setSelectedToken(nativeToken?.symbol || null)
+		}
+	}, [searchParams, tokens])
+
+	// Get token info when selected token changes
+	useEffect(() => {
+		if (selectedToken && tokens.length > 0) {
+			const token = tokens.find(t => t.symbol === selectedToken)
+			setTokenInfo(token)
+		}
+	}, [selectedToken, tokens])
+
 	// Update wallet address when network changes
 	useEffect(() => {
 		const address = getWalletAddressForChain(currentNetwork.id);
@@ -128,48 +158,69 @@ export default function WalletPage() {
 		setCurrentPage(1)
 	}
 
+	const handleTokenChange = (tokenSymbol: string) => {
+		setSelectedToken(tokenSymbol)
+		setShowTokenDropdown(false)
+		// Update URL to reflect selected token
+		router.push(`/wallet?token=${tokenSymbol}`)
+	}
+
 	// Use token balance from backend if available (for supported chains), otherwise calculate locally
 	const displayUsdBalance = TOKEN_CONFIGS[currentNetwork.id] && tokenBalance.usdBalance > 0 
 		? tokenBalance.usdBalance 
-		: (balance ? parseFloat(balance) * currentNetwork.rate : 0)
+		: (balance ? parseFloat(balance) * tokenBalance.tokenPrice : 0)
 	
-	const displayTokenPrice = TOKEN_CONFIGS[currentNetwork.id] && tokenBalance.tokenPrice > 0
+	const displayTokenPrice = tokenBalance.tokenPrice > 0
 		? tokenBalance.tokenPrice
 		: currentNetwork.rate
 
-	// Fetch balance
+	// Fetch balance for selected token
 	useEffect(() => {
 		const getBalance = async () => {
-			setIsLoadingBalance(true)
-			setBalance(null)
-			setError("")
-
-			if (!walletAddress || walletAddress === "N/A") {
+			if (!tokenInfo || !walletAddress || walletAddress === "N/A") {
 				setIsLoadingBalance(false)
 				return
 			}
 
+			setIsLoadingBalance(true)
+			setBalance(null)
+			setError("")
+
 			try {
 				const chainId = currentNetwork.id
-				const response = await fetch(`/api/balance?address=${walletAddress}&chain=${chainId}`)
 				
-				console.log('Balance API Response status:', response.status);
-				console.log('Balance API Response ok:', response.ok);
-				
-				if (!response.ok) {
-					const errorText = await response.text();
-					console.error('Balance API error response:', errorText);
-					throw new Error(`Failed to fetch balance: ${response.statusText}`)
-				}
+				// For native tokens, use the existing balance endpoint
+				if (tokenInfo.type === 'native') {
+					const response = await fetch(`/api/balance?address=${walletAddress}&chain=${chainId}`)
+					
+					if (!response.ok) {
+						throw new Error(`Failed to fetch balance: ${response.statusText}`)
+					}
 
-				const data = await response.json()
-				console.log('Balance API data:', data);
-				
-				if (data.success && data.balance !== undefined) {
-					setBalance(data.balance)
+					const data = await response.json()
+					
+					if (data.success && data.balance !== undefined) {
+						setBalance(data.balance)
+					} else {
+						throw new Error(data.error || 'Failed to get balance')
+					}
 				} else {
-					console.error('Invalid balance response format:', data);
-					throw new Error(data.error || 'Failed to get balance')
+					// For ERC20 tokens, we need to fetch from the backend balances endpoint
+					const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4444'
+					const response = await fetch(`${backendUrl}/wallet/balances/${chainId}/${walletAddress}`)
+					
+					if (!response.ok) {
+						throw new Error(`Failed to fetch balance: ${response.statusText}`)
+					}
+
+					const data = await response.json()
+					
+					if (data.success && data.data.balances) {
+						const tokenBalance = data.data.balances.find((b: any) => b.symbol === tokenInfo.symbol)
+						setBalance(tokenBalance?.balance || '0')
+					} else {
+						throw new Error(data.error || 'Failed to get balance')
+					}
 				}
 			} catch (error) {
 				console.error('Balance fetch error:', error)
@@ -181,33 +232,30 @@ export default function WalletPage() {
 		}
 
 		getBalance()
-	}, [walletAddress, currentNetwork])
+	}, [walletAddress, currentNetwork, tokenInfo])
 
 	// Fetch token USD balance
 	useEffect(() => {
 		const getTokenBalance = async () => {
-			if (!walletAddress || walletAddress === "N/A") {
+			if (!walletAddress || walletAddress === "N/A" || !selectedToken) {
 				return
 			}
 
-			// Get the native token symbol for the current network
-			const nativeTokenSymbol = currentNetwork.id === "ethereum" ? "ETH" : 
-									   currentNetwork.id === "sepolia" ? "ETH" :
-									   currentNetwork.id === "polygon" ? "MATIC" : 
-									   currentNetwork.id === "mumbai" ? "MATIC" :
-									   currentNetwork.id === "bsc" ? "BNB" : 
-									   currentNetwork.id === "bscTestnet" ? "BNB" : null;
-
-			if (!nativeTokenSymbol || !TOKEN_CONFIGS[currentNetwork.id]) {
-				// Network not supported for token USD balance
-				return;
+			if (!TOKEN_CONFIGS[currentNetwork.id] || !TOKEN_CONFIGS[currentNetwork.id][selectedToken]) {
+				// Use default network rate for tokens not in CoinGecko
+				setTokenBalance({
+					balance: balance,
+					usdBalance: 0,
+					tokenPrice: tokenInfo?.type === 'native' ? currentNetwork.rate : 0
+				})
+				return
 			}
 
 			setIsLoadingTokenBalance(true)
 			try {
 				const tokenData = await fetchTokenUSDBalance(
 					walletAddress,
-					nativeTokenSymbol,
+					selectedToken,
 					currentNetwork.id
 				);
 				
@@ -229,20 +277,27 @@ export default function WalletPage() {
 		}
 
 		getTokenBalance()
-	}, [walletAddress, currentNetwork])
+	}, [walletAddress, currentNetwork, selectedToken, balance, tokenInfo])
 
-	// Fetch transactions
+	// Fetch transactions (now supporting both native and ERC20 tokens)
 	useEffect(() => {
 		const getTransactions = async () => {
-			if (!walletAddress || walletAddress === "N/A") {
+			if (!walletAddress || walletAddress === "N/A" || !tokenInfo) {
 				return
 			}
 			
 			setIsLoadingTransactions(true)
 			try {
 				const chainId = currentNetwork.id
-				console.log('Fetching transactions for chain:', chainId);
-				const response = await fetch(`/api/transactions?address=${walletAddress}&chain=${chainId}&page=${currentPage}&offset=${transactionsPerPage}`)
+				let response;
+				
+				if (tokenInfo.type === 'native') {
+					// Fetch native token transactions
+					response = await fetch(`/api/transactions?address=${walletAddress}&chain=${chainId}&page=${currentPage}&offset=${transactionsPerPage}`)
+				} else {
+					// Fetch ERC20 token transactions
+					response = await fetch(`/api/token-transactions?address=${walletAddress}&chain=${chainId}&token=${tokenInfo.symbol}&page=${currentPage}&offset=${transactionsPerPage}`)
+				}
 				
 				if (!response.ok) {
 					throw new Error(`Failed to fetch transactions: ${response.statusText}`)
@@ -257,7 +312,9 @@ export default function WalletPage() {
 						hash: tx.hash || 'N/A',
 						from: tx.from || 'N/A',
 						to: tx.to || 'N/A',
-						timeStamp: tx.timeStamp || tx.timestamp || Date.now().toString()
+						timeStamp: tx.timeStamp || tx.timestamp || Date.now().toString(),
+						tokenSymbol: tx.tokenSymbol || tokenInfo.symbol,
+						tokenDecimal: tx.tokenDecimal || tokenInfo.decimals
 					}))
 					setTransactions(formattedTxs)
 					setTotalTransactions(data.totalCount || 0)
@@ -274,10 +331,11 @@ export default function WalletPage() {
 		}
 
 		getTransactions()
-	}, [walletAddress, currentPage, currentNetwork])
+	}, [walletAddress, currentPage, currentNetwork, tokenInfo])
 
-	const formatValue = (value: string) => {
-		return (parseInt(value) / 1e18).toFixed(6)
+	const formatValue = (value: string, decimals?: number) => {
+		const decimal = decimals || (tokenInfo?.type === 'native' ? 18 : tokenInfo?.decimals || 18)
+		return (parseInt(value) / Math.pow(10, decimal)).toFixed(6)
 	}
 
 	const formatGasPrice = (gasPrice: string) => {
@@ -294,6 +352,19 @@ export default function WalletPage() {
 
 			<main className="relative flex min-h-screen flex-col p-4 md:p-6">
 				<div className="w-full max-w-md mx-auto space-y-6">
+					{/* Back Button */}
+					<div className="animate-fadeIn">
+						<Link href="/home">
+							<Button 
+								variant="ghost" 
+								className="pl-0 bg-white/20 dark:bg-slate-800/20 backdrop-blur-sm hover:bg-white/30 dark:hover:bg-slate-700/30 transition-all duration-300"
+							>
+								<ArrowLeft className="mr-2 h-4 w-4" />
+								Back to Portfolio
+							</Button>
+						</Link>
+					</div>
+
 					{/* Enhanced Header */}
 					<Card className="border-0 shadow-lg bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm animate-fadeIn overflow-hidden">
 						<CardContent className="p-6">
@@ -308,10 +379,31 @@ export default function WalletPage() {
 									<span className="text-xs opacity-70">▼</span>
 								</Button>
 
-								<div className="text-right">
-									<p className="text-sm text-gray-600 dark:text-gray-400">
-										1 {currentNetwork.symbol} = ${displayTokenPrice.toLocaleString()}
-									</p>
+								{/* Token Selector */}
+								<div className="relative">
+									<Button
+										variant="outline"
+										onClick={() => setShowTokenDropdown(!showTokenDropdown)}
+										className="flex items-center space-x-2 bg-white/50 dark:bg-slate-700/50 backdrop-blur-sm border-gray-300 dark:border-gray-600"
+									>
+										<span>{tokenInfo?.symbol || 'Select Token'}</span>
+										<ChevronDown className="h-4 w-4" />
+									</Button>
+									
+									{showTokenDropdown && (
+										<div className="absolute right-0 z-10 mt-1 w-48 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
+											{tokens.map((token) => (
+												<button
+													key={token.symbol}
+													onClick={() => handleTokenChange(token.symbol)}
+													className="w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors flex items-center justify-between"
+												>
+													<span>{token.name}</span>
+													<span className="text-sm text-gray-500">{token.symbol}</span>
+												</button>
+											))}
+										</div>
+									)}
 								</div>
 							</div>
 
@@ -328,14 +420,14 @@ export default function WalletPage() {
 								) : (
 									<>
 										<h1 className="text-4xl font-bold text-blue-600 dark:text-blue-400 mb-2">
-											{balance} {currentNetwork.symbol}
+											{balance} {tokenInfo?.symbol || currentNetwork.symbol}
 										</h1>
 										<p className="text-xl text-gray-600 dark:text-gray-300">
 											${displayUsdBalance.toLocaleString()}
 										</p>
-										{TOKEN_CONFIGS[currentNetwork.id] && tokenBalance.tokenPrice > 0 && (
+										{displayTokenPrice > 0 && (
 											<p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-												via CoinGecko API
+												1 {tokenInfo?.symbol} = ${displayTokenPrice.toFixed(displayTokenPrice < 1 ? 4 : 2)}
 											</p>
 										)}
 									</>
@@ -344,7 +436,7 @@ export default function WalletPage() {
 
 							{/* Action Buttons */}
 							<div className="flex justify-center gap-8 animate-slideUp" style={{ animationDelay: '0.2s' }}>
-								<Link href="/wallet/send" className="flex flex-col items-center group">
+								<Link href={`/wallet/send?token=${selectedToken || ''}`} className="flex flex-col items-center group">
 									<Button 
 										variant="ghost" 
 										size="icon" 
@@ -388,7 +480,9 @@ export default function WalletPage() {
 					{/* Transaction History */}
 					<Card className="border-0 shadow-lg bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm animate-slideUp" style={{ animationDelay: '0.4s' }}>
 						<CardContent className="p-6">
-							<h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-gray-100">Transaction History</h2>
+							<h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-gray-100">
+								{tokenInfo?.type === 'native' ? 'Transaction History' : `${tokenInfo?.symbol} Transactions`}
+							</h2>
 
 							{chainLoading || isLoadingTransactions ? (
 								<div className="flex items-center justify-center py-8">
@@ -397,21 +491,19 @@ export default function WalletPage() {
 										{chainLoading ? `Loading ${currentNetwork.name} transactions...` : "Loading transactions..."}
 									</span>
 								</div>
-							) : txError ? (
-								<div className="text-red-600 dark:text-red-400 text-center py-4">{txError}</div>
 							) : transactions.length === 0 ? (
 								<div className="text-center py-8 text-gray-600 dark:text-gray-400">
-									<p>No transactions found on {currentNetwork.name}</p>
-									{(currentNetwork.id === "ethereum" || currentNetwork.id === "sepolia") && (
+									<p>No {tokenInfo?.symbol} transactions found on {currentNetwork.name}</p>
+									{tokenInfo?.type !== 'native' && (
 										<p className="text-sm mt-2">
-											Ensure ETHERSCAN_KEY is set in backend .env file
+											Ensure block explorer API key is set in backend .env file
 										</p>
 									)}
 								</div>
 							) : (
 								<>
 									<div className="space-y-3">
-										{transactions.map((tx, index) => (
+										{transactions.map((tx: any, index) => (
 											<div 
 												key={tx.hash} 
 												className="flex items-center justify-between p-4 bg-gray-50/80 dark:bg-gray-700/50 rounded-lg backdrop-blur-sm hover:bg-gray-100/80 dark:hover:bg-gray-600/50 transition-all duration-200 animate-slideUp"
@@ -443,7 +535,7 @@ export default function WalletPage() {
 												</div>
 												<div className="text-right">
 													<div className="text-sm font-medium text-gray-900 dark:text-white">
-														{formatValue(tx.value)} {currentNetwork.symbol}
+														{formatValue(tx.value, tx.tokenDecimal)} {tx.tokenSymbol || tokenInfo?.symbol || currentNetwork.symbol}
 													</div>
 													<div className="text-xs text-gray-500 dark:text-gray-400">
 														Gas: {formatGasPrice(tx.gasPrice)} Gwei
