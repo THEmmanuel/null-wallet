@@ -55,6 +55,8 @@ const getNetworkIcon = (chainId: string) => {
       return <Globe className="h-4 w-4 text-yellow-600" />;
     case 'nullnet':
       return <EclipseIcon className="h-4 w-4 text-indigo-600" />;
+    case 'flowTestnet':
+      return <EclipseIcon className="h-4 w-4 text-green-600" />;
     default:
       return <EclipseIcon className="h-4 w-4 text-gray-600" />;
   }
@@ -73,7 +75,9 @@ const getNetworkRate = (chainId: string) => {
     case 'bscTestnet':
       return 242;
     case 'nullnet':
-      return 1;
+      return 0; // For NullNet, prices come from individual assets
+    case 'flowTestnet':
+      return 1.2; // Example rate for Flow EVM Testnet
     default:
       return 1;
   }
@@ -189,6 +193,14 @@ export const ChainProvider: React.FC<{ children: ReactNode }> = ({ children }) =
           icon: <EclipseIcon className="h-4 w-4 text-indigo-600" />,
           rate: 1,
           blockExplorer: '#'
+        },
+        {
+          id: 'flowTestnet',
+          name: 'Flow EVM Testnet',
+          symbol: 'FLOW',
+          icon: <EclipseIcon className="h-4 w-4 text-green-600" />,
+          rate: 1.2,
+          blockExplorer: 'https://evm-testnet.flowscan.io'
         }
       ];
       console.log('🔄 ChainContext: Using fallback networks:', defaultNetworks);

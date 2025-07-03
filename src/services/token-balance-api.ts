@@ -47,6 +47,11 @@ export const TOKEN_CONFIGS: Record<string, Record<string, TokenConfig>> = {
     BNB: { symbol: 'binancecoin', contractAddress: null, chain: 'bscTestnet' },
     USDT: { symbol: 'tether', contractAddress: '0x337610d27c682E347C9cD60BD4b3b107C9d34dDd', chain: 'bscTestnet' },
     BUSD: { symbol: 'binance-usd', contractAddress: '0x78867BbEeF44f2326bF8DDd1941a4439382EF2A7', chain: 'bscTestnet' }
+  },
+  flowTestnet: {
+    FLOW: { symbol: 'flow', contractAddress: null, chain: 'flowTestnet' },
+    USDT: { symbol: 'tether', contractAddress: '0x5FbDB2315678afecb367f032d93F642f64180aa3', chain: 'flowTestnet' },
+    USDC: { symbol: 'usd-coin', contractAddress: '0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512', chain: 'flowTestnet' }
   }
 };
 

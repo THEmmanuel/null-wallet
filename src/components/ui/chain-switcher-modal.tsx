@@ -43,6 +43,8 @@ export const ChainSwitcherModal: React.FC<ChainSwitcherModalProps> = ({ isOpen, 
         return <Globe className="h-6 w-6 text-yellow-600" />;
       case 'nullnet':
         return <EclipseIcon className="h-6 w-6 text-indigo-600" />;
+      case 'flowTestnet':
+        return <EclipseIcon className="h-6 w-6 text-green-600" />;
       default:
         return <Globe className="h-6 w-6 text-gray-600" />;
     }

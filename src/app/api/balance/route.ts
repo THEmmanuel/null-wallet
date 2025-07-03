@@ -16,7 +16,7 @@ export async function GET(request: Request) {
     let response;
     
     // Use backend API for all supported chains
-    const supportedChains = ["ethereum", "polygon", "bsc", "sepolia", "mumbai", "bscTestnet", "nullnet"];
+    const supportedChains = ["ethereum", "polygon", "bsc", "sepolia", "mumbai", "bscTestnet", "nullnet", "flowTestnet"];
     
     if (supportedChains.includes(chain)) {
       // Use backend API for supported chains

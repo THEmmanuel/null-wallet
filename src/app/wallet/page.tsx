@@ -338,6 +338,13 @@ export default function WalletPage() {
 		return (parseInt(value) / Math.pow(10, decimal)).toFixed(6)
 	}
 
+	const formatBalance = (balance: string): string => {
+		if (!balance || balance === 'N/A') return '0.0000'
+		const num = parseFloat(balance)
+		if (isNaN(num)) return '0.0000'
+		return num.toFixed(4)
+	}
+
 	const formatGasPrice = (gasPrice: string) => {
 		return (parseInt(gasPrice) / 1e9).toFixed(2)
 	}
@@ -419,8 +426,8 @@ export default function WalletPage() {
 									<p className="text-red-600 dark:text-red-400">{error}</p>
 								) : (
 									<>
-										<h1 className="text-4xl font-bold text-blue-600 dark:text-blue-400 mb-2">
-											{balance} {tokenInfo?.symbol || currentNetwork.symbol}
+										<h1 className="text-4xl font-bold text-blue-600 dark:text-blue-400 mb-2 break-all">
+											{formatBalance(balance || '0')} {tokenInfo?.symbol || currentNetwork.symbol}
 										</h1>
 										<p className="text-xl text-gray-600 dark:text-gray-300">
 											${displayUsdBalance.toLocaleString()}

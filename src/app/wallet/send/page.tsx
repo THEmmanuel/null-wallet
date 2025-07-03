@@ -240,7 +240,7 @@ export default function SendPage() {
         chainId: currentNetwork.id
       };
 
-      console.log("Sending transaction with params:", {
+      console.log("[Frontend] Sending transaction with params:", {
         ...requestBody,
         senderPrivateKey: "***hidden***"
       });
@@ -254,10 +254,18 @@ export default function SendPage() {
         body: JSON.stringify(requestBody),
       });
 
-      const result = await response.json();
+      let result;
+      try {
+        result = await response.json();
+      } catch (jsonErr) {
+        console.error("[Frontend] Error parsing backend response:", jsonErr);
+        throw new Error("Invalid backend response");
+      }
+
+      console.log("[Frontend] Backend response:", result);
 
       if (response.ok && result.success) {
-        console.log("Transaction successful:", result);
+        console.log("[Frontend] Transaction successful:", result);
         // Redirect to success page with transaction details
         const params = new URLSearchParams({
           txHash: result.data.transactionHash || result.data.hash,
@@ -268,10 +276,11 @@ export default function SendPage() {
         });
         router.push(`/wallet/success?${params.toString()}`);
       } else {
+        console.error("[Frontend] Transaction failed:", result);
         throw new Error(result.error || result.details || 'Transaction failed');
       }
     } catch (error) {
-      console.error("Transaction error:", error);
+      console.error("[Frontend] Transaction error:", error);
       setError(error instanceof Error ? error.message : "Failed to send transaction");
     } finally {
       setIsSending(false);

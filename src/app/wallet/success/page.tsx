@@ -27,6 +27,7 @@ export default function SuccessPage() {
       'Mumbai': `https://mumbai.polygonscan.com/tx/${hash}`,
       'Binance Smart Chain': `https://bscscan.com/tx/${hash}`,
       'BSC Testnet': `https://testnet.bscscan.com/tx/${hash}`,
+      'Flow EVM Testnet': `https://evm-testnet.flowscan.io/tx/${hash}`,
     };
     return explorers[chain] || '#';
   };
