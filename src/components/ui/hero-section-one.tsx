@@ -67,14 +67,16 @@ export function HeroSectionOne() {
 					}}
 					className="relative z-10 mt-8 flex flex-wrap items-center justify-center gap-4"
 				>
-					<Link href="/home">
-						<button className="w-60 transform rounded-lg bg-black px-6 py-2 font-medium text-white transition-all duration-300 hover:-translate-y-0.5 hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200">
-							Launch App
-						</button>
-					</Link>
-					<button className="w-60 transform rounded-lg border border-gray-300 bg-white px-6 py-2 font-medium text-black transition-all duration-300 hover:-translate-y-0.5 hover:bg-gray-100 dark:border-gray-700 dark:bg-black dark:text-white dark:hover:bg-gray-900">
-						Get Started
-					</button>
+					<div className="text-center">
+						<div className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700">
+							<span className="text-sm font-medium text-neutral-600 dark:text-neutral-400">
+								🚀 Coming Soon
+							</span>
+						</div>
+						<p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">
+							We're building something amazing. Stay tuned!
+						</p>
+					</div>
 				</motion.div>
 				<motion.div
 					initial={{

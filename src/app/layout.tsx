@@ -4,8 +4,7 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { PayPalProvider } from "@/components/providers/PayPalProvider";
 import { ChainProvider } from "@/contexts/ChainContext";
-import { BottomNav } from "@/components/ui/bottom-nav";
-import { AppNav } from "@/components/ui/app-nav";
+import { ConditionalNavigation } from "@/components/ui/conditional-navigation";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -29,13 +28,11 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <ChainProvider>
-            <AppNav />
-            <PayPalProvider>
-              <main className="pb-16">
+            <ConditionalNavigation>
+              <PayPalProvider>
                 {children}
-              </main>
-              <BottomNav />
-            </PayPalProvider>
+              </PayPalProvider>
+            </ConditionalNavigation>
           </ChainProvider>
         </ThemeProvider>
       </body>
