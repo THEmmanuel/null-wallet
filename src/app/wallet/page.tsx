@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, Suspense } from "react"
 import Link from "next/link"
 import { ArrowDownLeft, Send, ShoppingCart, ChevronLeft, ChevronRight, ChevronDown, ArrowLeft } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
@@ -95,7 +95,7 @@ interface Transaction {
 	type?: string
 }
 
-export default function WalletPage() {
+function WalletPageContent() {
 	const { currentNetwork, networks, switchNetwork, isLoading: chainLoading, tokens, getTokensForChain } = useChain()
 	const searchParams = useSearchParams()
 	const router = useRouter()
@@ -589,5 +589,20 @@ export default function WalletPage() {
 				onClose={() => setShowChainModal(false)}
 			/>
 		</div>
+	)
+}
+
+export default function WalletPage() {
+	return (
+		<Suspense fallback={
+			<div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 flex items-center justify-center">
+				<div className="flex items-center space-x-2">
+					<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+					<p className="text-gray-600 dark:text-gray-400">Loading wallet...</p>
+				</div>
+			</div>
+		}>
+			<WalletPageContent />
+		</Suspense>
 	)
 }

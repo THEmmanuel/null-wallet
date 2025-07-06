@@ -76,19 +76,29 @@ export const authApi = {
 
     // Login
     login: async (data: { email?: string; password?: string; token?: string; authMethod: 'password' | 'token' }) => {
-        const response = await api.post('/api/auth/login', data);
-        if (response.data.success) {
-            const { accessToken, refreshToken, userId } = response.data.data;
-            const expiresAt = Date.now() + 60 * 60 * 1000; // 1 hour
+        console.log('🔍 Login request data:', data);
+        console.log('🔍 API base URL:', API_BASE_URL);
+        
+        try {
+            const response = await api.post('/api/auth/login', data);
+            console.log('🔍 Login response:', response.data);
+            
+            if (response.data.success) {
+                const { accessToken, refreshToken, userId } = response.data.data;
+                const expiresAt = Date.now() + 60 * 60 * 1000; // 1 hour
 
-            await sessionManager.setSession({
-                accessToken,
-                refreshToken,
-                userId,
-                expiresAt,
-            });
+                await sessionManager.setSession({
+                    accessToken,
+                    refreshToken,
+                    userId,
+                    expiresAt,
+                });
+            }
+            return response.data;
+        } catch (error) {
+            console.error('🔍 Login API error:', error);
+            throw error;
         }
-        return response.data;
     },
 
     // Forgot Password

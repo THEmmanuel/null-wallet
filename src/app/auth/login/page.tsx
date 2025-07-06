@@ -71,7 +71,22 @@ export default function LoginPage() {
             }
         } catch (err: any) {
             console.error("Login error:", err);
-            setError(err.response?.data?.error?.message || "An error occurred during login");
+            
+            // Better error handling with more detailed logging
+            if (err.response) {
+                // Server responded with error status
+                console.error("Response status:", err.response.status);
+                console.error("Response data:", err.response.data);
+                setError(err.response.data?.error?.message || `Server error: ${err.response.status}`);
+            } else if (err.request) {
+                // Request was made but no response received
+                console.error("No response received:", err.request);
+                setError("Unable to connect to server. Please check your internet connection.");
+            } else {
+                // Something else happened
+                console.error("Error setting up request:", err.message);
+                setError("An unexpected error occurred. Please try again.");
+            }
         } finally {
             setLoading(false);
         }
