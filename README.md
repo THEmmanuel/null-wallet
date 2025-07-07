@@ -5,7 +5,6 @@
 - Plus so much more feature adds
 
 - Null Wallet is a Wallet As A Service and Derivative Asset Layer (Proposed) with support for Flow EVM testnet
-- NullNet is a Proposed Post Quantum Ready Chain Built on Kinetic Keys SDK: https://www.npmjs.com/package/@ayxdele/kinetic-keys
 - Supports Token Based Auth: Test with: edf35a08f024fa69263938e37b1550a0095241569aa6435dd4d66e28aa2d457d (Choose Token based Auth on sign in or create a new account and refresh the page)
 
 - API reference for Wallet As A Service: https://nullwalletapi.onrender.com/api-docs/
@@ -32,7 +31,6 @@ The frontend now supports dynamic chain switching across all wallet operations. 
 - **Mumbai** - MATIC transactions on Polygon testnet
 - **BSC** - BNB transactions on Binance Smart Chain
 - **BSC Testnet** - BNB transactions on BSC testnet
-- **NullNet** - NULLX transactions on the NullNet blockchain (Sim)
 - **Flow EVM Testnet** - FLOW transactions on Flow EVM testnet
 
 ## Environment Setup
@@ -132,8 +130,8 @@ The frontend routes to these backend endpoints:
 ```typescript
 const { currentNetwork, switchNetwork } = useChain();
 
-// Switch to NullNet
-switchNetwork('nullnet');
+// Switch to sepolia
+switchNetwork('sepolia');
 
 // Switch to Ethereum  
 switchNetwork('ethereum');
@@ -147,15 +145,6 @@ const balance = await fetch(`/api/balance?address=${address}&chain=${currentNetw
 // Transactions will be filtered by current network
 const transactions = await fetch(`/api/transactions?address=${address}&chain=${currentNetwork.id}`);
 ```
-
-### Network-Specific UI
-```typescript
-// Show network-specific messages
-{currentNetwork.id === 'nullnet' && (
-  <div className="text-purple-600">
-    You're on the NullNet blockchain
-  </div>
-)}
 
 // Use network-specific block explorer
 <a href={`${currentNetwork.blockExplorer}/tx/${txHash}`}>
