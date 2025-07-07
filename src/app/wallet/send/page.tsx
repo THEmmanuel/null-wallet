@@ -237,7 +237,9 @@ function SendPageContent() {
         tokenToSend: selectedToken.symbol.toLowerCase(),
         senderWalletAddress: wallet.walletAddress,
         senderPrivateKey: wallet.walletKey,
-        chainId: currentNetwork.id
+        chainId: currentNetwork.id,
+		useGasSponsorship: false
+		// This only works for the native token of the chain.
       };
 
       console.log("[Frontend] Sending transaction with params:", {
@@ -246,7 +248,7 @@ function SendPageContent() {
       });
 
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4444';
-      const response = await fetch(`${backendUrl}/wallet/send-token/send-token-sponsored`, {
+      const response = await fetch(`${backendUrl}/wallet/send-token`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
