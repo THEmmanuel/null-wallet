@@ -68,13 +68,15 @@ export function HeroSectionOne() {
 					className="relative z-10 mt-8 flex flex-wrap items-center justify-center gap-4"
 				>
 					<div className="text-center">
-						<div className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700">
-							<span className="text-sm font-medium text-neutral-600 dark:text-neutral-400">
-								🚀 Coming Soon
-							</span>
-						</div>
+						<Link href="/auth/login">
+							<div className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors cursor-pointer">
+								<span className="text-sm font-medium text-neutral-600 dark:text-neutral-400">
+									🚀 Launch App
+								</span>
+							</div>
+						</Link>
 						<p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">
-							We're building something amazing. Stay tuned!
+							Get started with Null Wallet today!
 						</p>
 					</div>
 				</motion.div>

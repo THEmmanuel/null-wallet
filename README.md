@@ -1,41 +1,16 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Hackathon features summary
+During the PL Genesis Hackathon, I integrated FLOW EVM Testnet.
+Deployed a gas sponsorship contract here: https://evm-testnet.flowscan.io/tx/0x89ed7d13188bbf3a2f4eed19b017a58afd8ebd7f31a46af5a42b7613e3f00871
+Can be enabled with the useGasSpomsorship flag in the API call to true for non-native tokens
+Plus so much more feature adds
 
-## Getting Started
+Null Wallet is a Wallet As A Service and Derivative Asset Layer (Proposed)
+NullNet is a Proposed Post Quantum Ready Chain Built on Kinetic Keys SDK: https://www.npmjs.com/package/@ayxdele/kinetic-keys
+Supports Token Based Auth: Test with: edf35a08f024fa69263938e37b1550a0095241569aa6435dd4d66e28aa2d457d (Choose Token based Auth on sign in or create a new account and refresh the page)
 
-First, run the development server:
-
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-
-
+API reference for Wallet As A Service: https://nullwalletapi.onrender.com/api-docs/
+Backend Repo: https://github.com/THEmmanuel/NullWalletAPi
+Includes GasSponsorship.sol
 
 # Chain Switching Functionality Guide
 
@@ -57,7 +32,7 @@ The frontend now supports dynamic chain switching across all wallet operations. 
 - **Mumbai** - MATIC transactions on Polygon testnet
 - **BSC** - BNB transactions on Binance Smart Chain
 - **BSC Testnet** - BNB transactions on BSC testnet
-- **NullNet** - NULLX transactions on the NullNet blockchain
+- **NullNet** - NULLX transactions on the NullNet blockchain (Sim)
 - **Flow EVM Testnet** - FLOW transactions on Flow EVM testnet
 
 ## Environment Setup
@@ -222,3 +197,43 @@ const transactions = await fetch(`/api/transactions?address=${address}&chain=${c
 - Verify private key and wallet address are correct
 
 This implementation provides a seamless multi-chain experience where users can easily switch between networks and have all wallet operations automatically adapt to the selected chain. 
+
+
+
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+
+## Getting Started
+
+First, run the development server:
+
+```bash
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+
+## Learn More
+
+To learn more about Next.js, take a look at the following resources:
+
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+
+## Deploy on Vercel
+
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+

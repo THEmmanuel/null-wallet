@@ -65,7 +65,13 @@ export default function LoginPage() {
                     sessionStorage.setItem("userWalletPhrase", ethereumWallet.walletPhrase || "");
                 }
                 
+                // Redirect to wallet first
                 router.push("/wallet");
+                
+                // Then refresh the page after a brief delay
+                setTimeout(() => {
+                    window.location.reload();
+                }, 500);
             } else {
                 setError(response.error?.message || "Login failed");
             }
