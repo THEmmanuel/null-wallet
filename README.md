@@ -1,16 +1,16 @@
 # Hackathon features summary
-During the PL Genesis Hackathon, I integrated FLOW EVM Testnet.
-Deployed a gas sponsorship contract here: https://evm-testnet.flowscan.io/tx/0x89ed7d13188bbf3a2f4eed19b017a58afd8ebd7f31a46af5a42b7613e3f00871
-Can be enabled with the useGasSpomsorship flag in the API call to true for non-native tokens
-Plus so much more feature adds
+- During the PL Genesis Hackathon, I integrated FLOW EVM Testnet.
+- Deployed a gas sponsorship contract here: https://evm-testnet.flowscan.io/tx/0x89ed7d13188bbf3a2f4eed19b017a58afd8ebd7f31a46af5a42b7613e3f00871
+- Can be enabled with the useGasSpomsorship flag in the API call to true for non-native tokens
+- Plus so much more feature adds
 
-Null Wallet is a Wallet As A Service and Derivative Asset Layer (Proposed)
-NullNet is a Proposed Post Quantum Ready Chain Built on Kinetic Keys SDK: https://www.npmjs.com/package/@ayxdele/kinetic-keys
-Supports Token Based Auth: Test with: edf35a08f024fa69263938e37b1550a0095241569aa6435dd4d66e28aa2d457d (Choose Token based Auth on sign in or create a new account and refresh the page)
+- Null Wallet is a Wallet As A Service and Derivative Asset Layer (Proposed) with support for Flow EVM testnet
+- NullNet is a Proposed Post Quantum Ready Chain Built on Kinetic Keys SDK: https://www.npmjs.com/package/@ayxdele/kinetic-keys
+- Supports Token Based Auth: Test with: edf35a08f024fa69263938e37b1550a0095241569aa6435dd4d66e28aa2d457d (Choose Token based Auth on sign in or create a new account and refresh the page)
 
-API reference for Wallet As A Service: https://nullwalletapi.onrender.com/api-docs/
-Backend Repo: https://github.com/THEmmanuel/NullWalletAPi
-Includes GasSponsorship.sol
+- API reference for Wallet As A Service: https://nullwalletapi.onrender.com/api-docs/
+- Backend Repo: https://github.com/THEmmanuel/NullWalletAPi
+- Includes GasSponsorship.sol
 
 # Chain Switching Functionality Guide
 
