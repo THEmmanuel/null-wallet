@@ -1,11 +1,11 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { ArrowLeft, CreditCard } from "lucide-react";
 import { PayPalButtons, usePayPalScriptReducer } from "@paypal/react-paypal-js";
 
-export default function PayPalPage() {
+function PayPalPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [currency, setCurrency] = useState("USD");
@@ -103,5 +103,13 @@ export default function PayPalPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function PayPalPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+      <PayPalPageContent />
+    </Suspense>
   );
 } 

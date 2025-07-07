@@ -19,7 +19,7 @@ export default function ForgotTokenPage() {
         setLoading(true);
 
         try {
-            const response = await authApi.forgotToken({ email });
+            const response = await authApi.forgotToken(email);
 
             if (response.success) {
                 setSuccess(true);

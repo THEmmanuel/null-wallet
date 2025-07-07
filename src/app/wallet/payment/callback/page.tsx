@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CheckCircle, XCircle, Loader2, Mail, AlertCircle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -9,7 +9,7 @@ import api from "@/services/api";
 
 type TransactionStatus = "loading" | "success" | "failed" | "error";
 
-export default function PaymentCallbackPage() {
+function PaymentCallbackPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [status, setStatus] = useState<TransactionStatus>("loading");
@@ -202,22 +202,13 @@ export default function PaymentCallbackPage() {
                   </div>
                 )}
 
-                {/* Action Buttons */}
-                <div className="space-y-3">
-                  <Button
-                    onClick={() => router.push("/wallet/buy")}
-                    className="w-full py-4 text-lg font-semibold rounded-2xl bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl"
-                  >
-                    Try Again
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => router.push("/wallet")}
-                    className="w-full py-3 text-base font-semibold rounded-2xl border-2"
-                  >
-                    Back to Wallet
-                  </Button>
-                </div>
+                {/* Continue Button */}
+                <Button
+                  onClick={handleContinue}
+                  className="w-full py-4 text-lg font-semibold rounded-2xl bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 transition-all duration-200 shadow-lg hover:shadow-xl"
+                >
+                  Try Again
+                </Button>
               </div>
             )}
 
@@ -226,49 +217,41 @@ export default function PaymentCallbackPage() {
                 {/* Error Icon */}
                 <div className="flex justify-center">
                   <div className="relative">
-                    <div className="absolute inset-0 bg-orange-500 rounded-full blur-xl opacity-50 animate-pulse"></div>
-                    <AlertCircle className="h-20 w-20 text-orange-500 relative z-10" />
+                    <div className="absolute inset-0 bg-yellow-500 rounded-full blur-xl opacity-50 animate-pulse"></div>
+                    <AlertCircle className="h-20 w-20 text-yellow-500 relative z-10" />
                   </div>
                 </div>
 
                 {/* Error Message */}
                 <div className="space-y-2">
-                  <h2 className="text-3xl font-bold text-orange-600 dark:text-orange-400">
-                    Verification Error
+                  <h2 className="text-3xl font-bold text-yellow-600 dark:text-yellow-400">
+                    Error
                   </h2>
                   <p className="text-gray-600 dark:text-gray-400">
-                    {errorMessage || "We couldn't verify your transaction"}
+                    {errorMessage || "An error occurred while verifying your transaction."}
                   </p>
                 </div>
 
-                {/* Error Details */}
-                <div className="p-4 rounded-xl bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800">
-                  <p className="text-sm text-orange-700 dark:text-orange-300">
-                    Please contact support if you believe this is an error. Your payment may still be processing.
-                  </p>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="space-y-3">
-                  <Button
-                    onClick={() => router.push("/wallet")}
-                    className="w-full py-4 text-lg font-semibold rounded-2xl bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 transition-all duration-200 shadow-lg hover:shadow-xl"
-                  >
-                    Go to Wallet
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => window.location.href = "mailto:support@nullwallet.com"}
-                    className="w-full py-3 text-base font-semibold rounded-2xl border-2"
-                  >
-                    Contact Support
-                  </Button>
-                </div>
+                {/* Continue Button */}
+                <Button
+                  onClick={handleContinue}
+                  className="w-full py-4 text-lg font-semibold rounded-2xl bg-gradient-to-r from-yellow-600 to-yellow-400 hover:from-yellow-700 hover:to-yellow-500 transition-all duration-200 shadow-lg hover:shadow-xl"
+                >
+                  Back
+                </Button>
               </div>
             )}
           </CardContent>
         </Card>
       </div>
     </div>
+  );
+}
+
+export default function PaymentCallbackPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+      <PaymentCallbackPageContent />
+    </Suspense>
   );
 } 

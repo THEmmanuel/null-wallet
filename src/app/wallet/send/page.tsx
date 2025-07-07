@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import Link from "next/link"
 import axios from "axios"
 import { ArrowLeft, ArrowRightLeft, Loader2, ChevronDown } from "lucide-react"
@@ -27,7 +27,7 @@ interface TokenInfo {
   contractAddress?: string;
 }
 
-export default function SendPage() {
+function SendPageContent() {
   const { currentNetwork, tokens, getTokensForChain } = useChain()
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -246,7 +246,7 @@ export default function SendPage() {
       });
 
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4444';
-      const response = await fetch(`${backendUrl}/wallet/send-token`, {
+      const response = await fetch(`${backendUrl}/wallet/send-token/send-token-sponsored`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -543,4 +543,12 @@ export default function SendPage() {
       </main>
     </div>
   )
+}
+
+export default function SendPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+      <SendPageContent />
+    </Suspense>
+  );
 }

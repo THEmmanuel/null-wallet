@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Copy, ArrowLeft, Check } from "lucide-react";
 import { useRouter } from "next/navigation";
-import QRCode from "qrcode.react";
 import { useChain } from "@/contexts/ChainContext";
 import { getWalletAddressForChain } from "@/utils/wallet-helpers";
 

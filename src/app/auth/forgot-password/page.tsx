@@ -19,7 +19,7 @@ export default function ForgotPasswordPage() {
         setLoading(true);
 
         try {
-            const response = await authApi.forgotPassword({ email });
+            const response = await authApi.forgotPassword(email);
 
             if (response.success) {
                 setSuccess(true);
