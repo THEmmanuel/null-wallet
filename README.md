@@ -35,7 +35,7 @@ The frontend now supports dynamic chain switching across all wallet operations. 
 
 ## Environment Variables Setup
 
-To run the project, you need to configure environment variables. Create a `.env.local` file in the root of the `null-wallet-ts` directory with the following content:
+To run the project, you need to configure environment variables. Create a `.env` file in the root of the `null-wallet-ts` directory with the following content:
 
 ```env
 # PayPal Configuration
@@ -60,7 +60,7 @@ JWT_REFRESH_SECRET=your_jwt_refresh_secret_here
 - Variables starting with `NEXT_PUBLIC_` are exposed to the frontend.
 - All other variables are used by the backend and should be kept secret.
 
-> **Warning:** Never commit your `.env.local` file to version control. It contains sensitive credentials.
+> **Warning:** Never commit your `.env` file to version control. It contains sensitive credentials.
 
 ## How It Works
 
