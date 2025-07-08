@@ -33,20 +33,34 @@ The frontend now supports dynamic chain switching across all wallet operations. 
 - **BSC Testnet** - BNB transactions on BSC testnet
 - **Flow EVM Testnet** - FLOW transactions on Flow EVM testnet
 
-## Environment Setup
+## Environment Variables Setup
 
-Create a `.env.local` file in the `null-wallet-ts` directory with:
+To run the project, you need to configure environment variables. Create a `.env.local` file in the root of the `null-wallet-ts` directory with the following content:
 
-```bash
-# Backend API Configuration
-BACKEND_URL=http://localhost:4444
-
-# External API Keys
-ETHERSCAN_KEY=your_etherscan_api_key_here
-
-# PayPal Configuration (if using PayPal features)
+```env
+# PayPal Configuration
 NEXT_PUBLIC_PAYPAL_CLIENT_ID=your_paypal_client_id_here
+PAYPAL_CLIENT_ID=your_paypal_client_id_here
+PAYPAL_CLIENT_SECRET=your_paypal_client_secret_here
+
+# API Keys
+ETHERSCAN_KEY=your_etherscan_api_key_here
+BSCSCAN_KEY=your_bscscan_api_key_here
+ALCHEMY_KEY=your_alchemy_key_here
+
+# Backend URL
+BACKEND_URL=http://localhost:4444
+NEXT_PUBLIC_BACKEND_URL=http://localhost:4444
+
+# JWT Secrets
+JWT_SECRET=your_jwt_secret_here
+JWT_REFRESH_SECRET=your_jwt_refresh_secret_here
 ```
+
+- Variables starting with `NEXT_PUBLIC_` are exposed to the frontend.
+- All other variables are used by the backend and should be kept secret.
+
+> **Warning:** Never commit your `.env.local` file to version control. It contains sensitive credentials.
 
 ## How It Works
 
@@ -186,6 +200,8 @@ const transactions = await fetch(`/api/transactions?address=${address}&chain=${c
 - Verify private key and wallet address are correct
 
 This implementation provides a seamless multi-chain experience where users can easily switch between networks and have all wallet operations automatically adapt to the selected chain. 
+
+
 
 
 
